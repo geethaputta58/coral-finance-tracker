@@ -1,16 +1,13 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getFinancialSummary, getIncomes, getExpenses } from '@/lib/data';
+import { getFinancialSummary, getIncomes, getExpenses, FinancialSummary } from '@/lib/data';
 import { ArrowUpIcon, ArrowDownIcon, PiggyBankIcon, TrendingUpIcon, CreditCardIcon } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { useAuth } from '@/contexts/AuthContext';
-import UserDetails from '@/components/UserDetails';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  
   const [summary, setSummary] = useState<FinancialSummary>({
     totalIncome: 0,
     totalExpenses: 0,
@@ -99,8 +96,6 @@ const Dashboard = () => {
           Welcome to your personal finance dashboard. Here's an overview of your financial data.
         </p>
       </div>
-      
-      <UserDetails user={user} />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
