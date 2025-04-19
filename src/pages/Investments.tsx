@@ -5,10 +5,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getInvestments, addInvestment, updateInvestment, deleteInvestment, Investment } from '@/lib/data';
+import { getInvestments, addInvestment, updateInvestment, deleteInvestment, Investment } from '@/lib/services/investmentService';
 import { PlusIcon, SearchIcon, PencilIcon, TrashIcon } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const InvestmentsPage = () => {
   const [investments, setInvestments] = useState<Investment[]>([]);
@@ -310,8 +311,8 @@ const InvestmentsPage = () => {
                   </DialogTitle>
                   <DialogDescription>
                     {editingInvestment 
-                      ? 'Update your investment details. Click save when you're done.'
-                      : 'Enter your investment details. Click save when you're done.'}
+                      ? "Update your investment details. Click save when you're done."
+                      : "Enter your investment details. Click save when you're done."}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">

@@ -5,9 +5,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getDebts, addDebt, updateDebt, deleteDebt, Debt } from '@/lib/data';
+import { getDebts, addDebt, updateDebt, deleteDebt, Debt } from '@/lib/services/debtService';
 import { PlusIcon, SearchIcon, AlertCircleIcon, PencilIcon, TrashIcon } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { format, isBefore, parseISO } from 'date-fns';
@@ -333,8 +333,8 @@ const DebtsPage = () => {
                   </DialogTitle>
                   <DialogDescription>
                     {editingDebt 
-                      ? 'Update your debt details. Click save when you're done.'
-                      : 'Enter your debt details. Click save when you're done.'}
+                      ? "Update your debt details. Click save when you're done."
+                      : "Enter your debt details. Click save when you're done."}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
