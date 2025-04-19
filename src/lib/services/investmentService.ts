@@ -1,43 +1,51 @@
 
 import { Investment } from '../types';
-import { loadData, saveData } from '../utils/storage';
-import { currentUserId, sampleInvestments } from '../utils/sampleData';
 
+// Mock user ID
+const userId = 1;
+
+// Mock data
+const investmentData: Investment[] = [
+  { id: 1, userId: 1, name: 'S&P 500 ETF', type: 'ETF', amount: 10000, date: '2022-01-15', returns: 7.5 },
+  { id: 2, userId: 1, name: 'Tech Company Stock', type: 'Stock', amount: 5000, date: '2022-05-20', returns: 12.3 },
+  { id: 3, userId: 1, name: '401(k)', type: 'Retirement', amount: 35000, date: '2020-03-10', returns: 6 },
+];
+
+// Mock API functions
 export const getInvestments = (): Investment[] => {
-  return loadData<Investment>('investments', sampleInvestments).filter(investment => investment.userId === currentUserId);
+  return investmentData.filter(investment => investment.userId === userId);
 };
 
-export const addInvestment = (investment: Omit<Investment, 'id' | 'userId'>): Investment => {
-  const investments = getInvestments();
+export const addInvestment = (data: Omit<Investment, 'id' | 'userId'>): Investment => {
   const newInvestment: Investment = {
-    id: investments.length > 0 ? Math.max(...investments.map(i => i.id)) + 1 : 1,
-    userId: currentUserId,
-    ...investment,
+    id: investmentData.length + 1,
+    userId,
+    ...data,
   };
-  saveData('investments', [...investments, newInvestment]);
+  investmentData.push(newInvestment);
   return newInvestment;
 };
 
-export const updateInvestment = (id: number, update: Partial<Investment>): Investment | null => {
-  const investments = getInvestments();
-  const index = investments.findIndex(i => i.id === id);
-  
+export const updateInvestment = (id: number, data: Omit<Investment, 'id' | 'userId'>): Investment | null => {
+  const index = investmentData.findIndex(investment => investment.id === id && investment.userId === userId);
   if (index === -1) return null;
   
-  const updatedInvestment = { ...investments[index], ...update };
-  investments[index] = updatedInvestment;
-  saveData('investments', investments);
-  
+  const updatedInvestment: Investment = {
+    id,
+    userId,
+    ...data,
+  };
+  investmentData[index] = updatedInvestment;
   return updatedInvestment;
 };
 
 export const deleteInvestment = (id: number): boolean => {
-  const investments = getInvestments();
-  const index = investments.findIndex(i => i.id === id);
-  
+  const index = investmentData.findIndex(investment => investment.id === id && investment.userId === userId);
   if (index === -1) return false;
   
-  investments.splice(index, 1);
-  saveData('investments', investments);
+  investmentData.splice(index, 1);
   return true;
 };
+
+// Re-export the Investment type
+export type { Investment } from '../types';

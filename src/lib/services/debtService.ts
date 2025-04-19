@@ -1,43 +1,51 @@
 
 import { Debt } from '../types';
-import { loadData, saveData } from '../utils/storage';
-import { currentUserId, sampleDebts } from '../utils/sampleData';
 
+// Mock user ID
+const userId = 1;
+
+// Mock data
+const debtData: Debt[] = [
+  { id: 1, userId: 1, type: 'Student Loan', amount: 15000, interest: 4.5, dueDate: '2030-05-15' },
+  { id: 2, userId: 1, type: 'Credit Card', amount: 2500, interest: 18.9, dueDate: '2023-04-10' },
+  { id: 3, userId: 1, type: 'Mortgage', amount: 250000, interest: 3.2, dueDate: '2050-07-28' },
+];
+
+// Mock API functions
 export const getDebts = (): Debt[] => {
-  return loadData<Debt>('debts', sampleDebts).filter(debt => debt.userId === currentUserId);
+  return debtData.filter(debt => debt.userId === userId);
 };
 
-export const addDebt = (debt: Omit<Debt, 'id' | 'userId'>): Debt => {
-  const debts = getDebts();
+export const addDebt = (data: Omit<Debt, 'id' | 'userId'>): Debt => {
   const newDebt: Debt = {
-    id: debts.length > 0 ? Math.max(...debts.map(d => d.id)) + 1 : 1,
-    userId: currentUserId,
-    ...debt,
+    id: debtData.length + 1,
+    userId,
+    ...data,
   };
-  saveData('debts', [...debts, newDebt]);
+  debtData.push(newDebt);
   return newDebt;
 };
 
-export const updateDebt = (id: number, update: Partial<Debt>): Debt | null => {
-  const debts = getDebts();
-  const index = debts.findIndex(d => d.id === id);
-  
+export const updateDebt = (id: number, data: Omit<Debt, 'id' | 'userId'>): Debt | null => {
+  const index = debtData.findIndex(debt => debt.id === id && debt.userId === userId);
   if (index === -1) return null;
   
-  const updatedDebt = { ...debts[index], ...update };
-  debts[index] = updatedDebt;
-  saveData('debts', debts);
-  
+  const updatedDebt: Debt = {
+    id,
+    userId,
+    ...data,
+  };
+  debtData[index] = updatedDebt;
   return updatedDebt;
 };
 
 export const deleteDebt = (id: number): boolean => {
-  const debts = getDebts();
-  const index = debts.findIndex(d => d.id === id);
-  
+  const index = debtData.findIndex(debt => debt.id === id && debt.userId === userId);
   if (index === -1) return false;
   
-  debts.splice(index, 1);
-  saveData('debts', debts);
+  debtData.splice(index, 1);
   return true;
 };
+
+// Re-export the Debt type
+export type { Debt } from '../types';
