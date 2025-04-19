@@ -1,16 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getInvestments, addInvestment, Investment } from '@/lib/data';
-import { PlusIcon, SearchIcon, TrendingUpIcon } from 'lucide-react';
+import { getInvestments, addInvestment, updateInvestment, deleteInvestment, Investment } from '@/lib/data';
+import { PlusIcon, SearchIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const InvestmentsPage = () => {
   const [investments, setInvestments] = useState<Investment[]>([]);
@@ -19,17 +17,16 @@ const InvestmentsPage = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
-  
+  const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
+
   const { toast } = useToast();
-  
-  // Form state
+
   const [name, setName] = useState<string>('');
   const [type, setType] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [returns, setReturns] = useState<string>('0');
-  
-  // Investment types
+
   const investmentTypes = [
     'ETF',
     'Stock',
@@ -41,32 +38,27 @@ const InvestmentsPage = () => {
     'Savings',
     'Other',
   ];
-  
+
   useEffect(() => {
-    // Load investment data
     const loadedInvestments = getInvestments();
     setInvestments(loadedInvestments);
     setFilteredInvestments(loadedInvestments);
-    
-    // Process chart data
     updateChartData(loadedInvestments);
   }, []);
-  
+
   useEffect(() => {
     filterInvestments();
   }, [filterType, searchTerm, investments]);
-  
+
   const filterInvestments = () => {
     let filtered = [...investments];
-    
-    // Apply type filter
+
     if (filterType !== 'all') {
       filtered = filtered.filter(investment => 
         investment.type.toLowerCase() === filterType.toLowerCase()
       );
     }
-    
-    // Apply search filter
+
     if (searchTerm.trim() !== '') {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(investment => 
@@ -74,14 +66,14 @@ const InvestmentsPage = () => {
         investment.type.toLowerCase().includes(search)
       );
     }
-    
+
     setFilteredInvestments(filtered);
     updateChartData(filtered);
   };
-  
+
   const updateChartData = (data: Investment[]) => {
     const typeMap = new Map<string, { amount: number, returns: number }>();
-    
+
     data.forEach(investment => {
       const existing = typeMap.get(investment.type) || { amount: 0, returns: 0 };
       typeMap.set(investment.type, {
@@ -89,16 +81,16 @@ const InvestmentsPage = () => {
         returns: existing.returns + (investment.amount * investment.returns / 100)
       });
     });
-    
+
     const chartData = Array.from(typeMap.entries()).map(([name, values]) => ({
       name,
       amount: values.amount,
       returns: values.returns
     }));
-    
+
     setChartData(chartData);
   };
-  
+
   const handleAddInvestment = () => {
     if (!name || !type || !amount || !date) {
       toast({
@@ -108,10 +100,10 @@ const InvestmentsPage = () => {
       });
       return;
     }
-    
+
     const amountValue = parseFloat(amount);
     const returnsValue = parseFloat(returns);
-    
+
     if (isNaN(amountValue) || amountValue <= 0) {
       toast({
         title: 'Invalid Amount',
@@ -120,7 +112,7 @@ const InvestmentsPage = () => {
       });
       return;
     }
-    
+
     if (isNaN(returnsValue)) {
       toast({
         title: 'Invalid Returns',
@@ -129,7 +121,7 @@ const InvestmentsPage = () => {
       });
       return;
     }
-    
+
     const newInvestment = addInvestment({
       name,
       type,
@@ -137,29 +129,106 @@ const InvestmentsPage = () => {
       date,
       returns: returnsValue,
     });
-    
+
     setInvestments([...investments, newInvestment]);
-    
-    // Reset form
+
     setName('');
     setType('');
     setAmount('');
     setDate(new Date().toISOString().split('T')[0]);
     setReturns('0');
-    
+
     setIsDialogOpen(false);
-    
+
     toast({
       title: 'Investment Added',
       description: 'Your investment has been successfully recorded.',
     });
   };
-  
-  // Calculate totals
+
+  const handleEditInvestment = () => {
+    if (!editingInvestment || !name || !type || !amount || !date) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill all required fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const amountValue = parseFloat(amount);
+    const returnsValue = parseFloat(returns);
+
+    if (isNaN(amountValue) || amountValue <= 0) {
+      toast({
+        title: 'Invalid Amount',
+        description: 'Please enter a valid positive number for the amount.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isNaN(returnsValue)) {
+      toast({
+        title: 'Invalid Returns',
+        description: 'Please enter a valid number for returns percentage.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const updatedInvestment = updateInvestment(editingInvestment.id, {
+      name,
+      type,
+      amount: amountValue,
+      date,
+      returns: returnsValue,
+    });
+
+    if (updatedInvestment) {
+      setInvestments(investments.map(i => 
+        i.id === editingInvestment.id ? updatedInvestment : i
+      ));
+      
+      setName('');
+      setType('');
+      setAmount('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setReturns('0');
+      setEditingInvestment(null);
+      setIsDialogOpen(false);
+
+      toast({
+        title: 'Investment Updated',
+        description: 'Your investment has been successfully updated.',
+      });
+    }
+  };
+
+  const handleDeleteInvestment = (id: number) => {
+    if (deleteInvestment(id)) {
+      setInvestments(investments.filter(i => i.id !== id));
+      toast({
+        title: 'Investment Deleted',
+        description: 'Your investment has been successfully deleted.',
+      });
+    }
+  };
+
+  const openEditDialog = (investment: Investment) => {
+    setEditingInvestment(investment);
+    setName(investment.name);
+    setType(investment.type);
+    setAmount(investment.amount.toString());
+    setDate(investment.date);
+    setReturns(investment.returns.toString());
+    setIsDialogOpen(true);
+  };
+
   const totalInvested = filteredInvestments.reduce((sum, inv) => sum + inv.amount, 0);
   const totalReturns = filteredInvestments.reduce((sum, inv) => sum + (inv.amount * inv.returns / 100), 0);
   const averageReturn = totalInvested > 0 ? (totalReturns / totalInvested) * 100 : 0;
-  
+
   return (
     <div className="space-y-8">
       <div>
@@ -231,14 +300,18 @@ const InvestmentsPage = () => {
               <DialogTrigger asChild>
                 <Button>
                   <PlusIcon className="h-4 w-4 mr-2" />
-                  Add Investment
+                  {editingInvestment ? 'Edit Investment' : 'Add New Investment'}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Add New Investment</DialogTitle>
+                  <DialogTitle>
+                    {editingInvestment ? 'Edit Investment' : 'Add New Investment'}
+                  </DialogTitle>
                   <DialogDescription>
-                    Enter your investment details. Click save when you're done.
+                    {editingInvestment 
+                      ? 'Update your investment details. Click save when you're done.'
+                      : 'Enter your investment details. Click save when you're done.'}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -317,7 +390,12 @@ const InvestmentsPage = () => {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" onClick={handleAddInvestment}>Save</Button>
+                  <Button 
+                    type="submit" 
+                    onClick={editingInvestment ? handleEditInvestment : handleAddInvestment}
+                  >
+                    {editingInvestment ? 'Update' : 'Save'}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -342,12 +420,13 @@ const InvestmentsPage = () => {
                         <th className="py-3 px-4 text-right">Amount</th>
                         <th className="py-3 px-4 text-right">Returns (%)</th>
                         <th className="py-3 px-4 text-right">Value</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
                       {filteredInvestments.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="py-6 text-center text-muted-foreground">
+                          <td colSpan={7} className="py-6 text-center text-muted-foreground">
                             No investment entries found.
                           </td>
                         </tr>
@@ -363,6 +442,45 @@ const InvestmentsPage = () => {
                             <td className="py-3 px-4 text-right">{investment.returns}%</td>
                             <td className="py-3 px-4 text-right">
                               ${(investment.amount + (investment.amount * investment.returns / 100)).toLocaleString()}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => openEditDialog(investment)}
+                                >
+                                  <PencilIcon className="h-4 w-4" />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      className="text-destructive hover:text-destructive"
+                                    >
+                                      <TrashIcon className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Investment</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this investment? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => handleDeleteInvestment(investment.id)}
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
                             </td>
                           </tr>
                         ))

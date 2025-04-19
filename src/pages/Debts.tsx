@@ -1,15 +1,14 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getDebts, addDebt, Debt } from '@/lib/data';
-import { PlusIcon, SearchIcon, AlertCircleIcon } from 'lucide-react';
+import { getDebts, addDebt, updateDebt, deleteDebt, Debt } from '@/lib/data';
+import { PlusIcon, SearchIcon, AlertCircleIcon, PencilIcon, TrashIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { format, isBefore, parseISO } from 'date-fns';
 
@@ -21,16 +20,15 @@ const DebtsPage = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [chartData, setChartData] = useState<any[]>([]);
-  
+  const [editingDebt, setEditingDebt] = useState<Debt | null>(null);
+
   const { toast } = useToast();
-  
-  // Form state
+
   const [type, setType] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [interest, setInterest] = useState<string>('');
   const [dueDate, setDueDate] = useState<string>(new Date().toISOString().split('T')[0]);
-  
-  // Debt types
+
   const debtTypes = [
     'Credit Card',
     'Student Loan',
@@ -41,32 +39,27 @@ const DebtsPage = () => {
     'Tax Debt',
     'Other',
   ];
-  
+
   useEffect(() => {
-    // Load debt data
     const loadedDebts = getDebts();
     setDebts(loadedDebts);
     setFilteredDebts(loadedDebts);
-    
-    // Process chart data
     updateChartData(loadedDebts);
   }, []);
-  
+
   useEffect(() => {
     filterDebts();
   }, [filterType, filterStatus, searchTerm, debts]);
-  
+
   const filterDebts = () => {
     let filtered = [...debts];
-    
-    // Apply type filter
+
     if (filterType !== 'all') {
       filtered = filtered.filter(debt => 
         debt.type.toLowerCase() === filterType.toLowerCase()
       );
     }
-    
-    // Apply status filter
+
     if (filterStatus !== 'all') {
       const today = new Date();
       if (filterStatus === 'overdue') {
@@ -75,35 +68,34 @@ const DebtsPage = () => {
         filtered = filtered.filter(debt => !isBefore(parseISO(debt.dueDate), today));
       }
     }
-    
-    // Apply search filter
+
     if (searchTerm.trim() !== '') {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(debt => 
         debt.type.toLowerCase().includes(search)
       );
     }
-    
+
     setFilteredDebts(filtered);
     updateChartData(filtered);
   };
-  
+
   const updateChartData = (data: Debt[]) => {
     const typeMap = new Map<string, number>();
-    
+
     data.forEach(debt => {
       const existing = typeMap.get(debt.type) || 0;
       typeMap.set(debt.type, existing + debt.amount);
     });
-    
+
     const chartData = Array.from(typeMap.entries()).map(([name, value]) => ({
       name,
       value,
     }));
-    
+
     setChartData(chartData);
   };
-  
+
   const handleAddDebt = () => {
     if (!type || !amount || !interest || !dueDate) {
       toast({
@@ -113,10 +105,10 @@ const DebtsPage = () => {
       });
       return;
     }
-    
+
     const amountValue = parseFloat(amount);
     const interestValue = parseFloat(interest);
-    
+
     if (isNaN(amountValue) || amountValue <= 0) {
       toast({
         title: 'Invalid Amount',
@@ -125,7 +117,7 @@ const DebtsPage = () => {
       });
       return;
     }
-    
+
     if (isNaN(interestValue) || interestValue < 0) {
       toast({
         title: 'Invalid Interest',
@@ -134,41 +126,113 @@ const DebtsPage = () => {
       });
       return;
     }
-    
+
     const newDebt = addDebt({
       type,
       amount: amountValue,
       interest: interestValue,
       dueDate,
     });
-    
+
     setDebts([...debts, newDebt]);
-    
-    // Reset form
+
     setType('');
     setAmount('');
     setInterest('');
     setDueDate(new Date().toISOString().split('T')[0]);
-    
     setIsDialogOpen(false);
-    
+
     toast({
       title: 'Debt Added',
       description: 'Your debt has been successfully recorded.',
     });
   };
-  
-  // Calculate totals
+
+  const handleEditDebt = () => {
+    if (!editingDebt || !type || !amount || !interest || !dueDate) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill all required fields.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const amountValue = parseFloat(amount);
+    const interestValue = parseFloat(interest);
+
+    if (isNaN(amountValue) || amountValue <= 0) {
+      toast({
+        title: 'Invalid Amount',
+        description: 'Please enter a valid positive number for the amount.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (isNaN(interestValue) || interestValue < 0) {
+      toast({
+        title: 'Invalid Interest',
+        description: 'Please enter a valid non-negative number for interest rate.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const updatedDebt = updateDebt(editingDebt.id, {
+      type,
+      amount: amountValue,
+      interest: interestValue,
+      dueDate,
+    });
+
+    if (updatedDebt) {
+      setDebts(debts.map(d => 
+        d.id === editingDebt.id ? updatedDebt : d
+      ));
+      
+      setType('');
+      setAmount('');
+      setInterest('');
+      setDueDate(new Date().toISOString().split('T')[0]);
+      setEditingDebt(null);
+      setIsDialogOpen(false);
+
+      toast({
+        title: 'Debt Updated',
+        description: 'Your debt has been successfully updated.',
+      });
+    }
+  };
+
+  const handleDeleteDebt = (id: number) => {
+    if (deleteDebt(id)) {
+      setDebts(debts.filter(d => d.id !== id));
+      toast({
+        title: 'Debt Deleted',
+        description: 'Your debt has been successfully deleted.',
+      });
+    }
+  };
+
+  const openEditDialog = (debt: Debt) => {
+    setEditingDebt(debt);
+    setType(debt.type);
+    setAmount(debt.amount.toString());
+    setInterest(debt.interest.toString());
+    setDueDate(debt.dueDate);
+    setIsDialogOpen(true);
+  };
+
   const totalDebt = filteredDebts.reduce((sum, debt) => sum + debt.amount, 0);
   const totalInterest = filteredDebts.reduce((sum, debt) => sum + (debt.amount * debt.interest / 100), 0);
   const averageInterestRate = totalDebt > 0 ? filteredDebts.reduce((sum, debt) => sum + (debt.amount / totalDebt * debt.interest), 0) : 0;
-  
-  // Count overdue debts
+
   const today = new Date();
   const overdueDebts = filteredDebts.filter(debt => isBefore(parseISO(debt.dueDate), today));
-  
+
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28AD1', '#FF6B6B', '#4CAF50', '#9C27B0'];
-  
+
   return (
     <div className="space-y-8">
       <div>
@@ -259,14 +323,18 @@ const DebtsPage = () => {
               <DialogTrigger asChild>
                 <Button>
                   <PlusIcon className="h-4 w-4 mr-2" />
-                  Add Debt
+                  {editingDebt ? 'Edit Debt' : 'Add New Debt'}
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Add New Debt</DialogTitle>
+                  <DialogTitle>
+                    {editingDebt ? 'Edit Debt' : 'Add New Debt'}
+                  </DialogTitle>
                   <DialogDescription>
-                    Enter your debt details. Click save when you're done.
+                    {editingDebt 
+                      ? 'Update your debt details. Click save when you're done.'
+                      : 'Enter your debt details. Click save when you're done.'}
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
@@ -333,7 +401,12 @@ const DebtsPage = () => {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="submit" onClick={handleAddDebt}>Save</Button>
+                  <Button 
+                    type="submit" 
+                    onClick={editingDebt ? handleEditDebt : handleAddDebt}
+                  >
+                    {editingDebt ? 'Update' : 'Save'}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -357,12 +430,13 @@ const DebtsPage = () => {
                         <th className="py-3 px-4 text-right">Interest</th>
                         <th className="py-3 px-4 text-left">Due Date</th>
                         <th className="py-3 px-4 text-right">Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
                       {filteredDebts.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="py-6 text-center text-muted-foreground">
+                          <td colSpan={6} className="py-6 text-center text-muted-foreground">
                             No debt entries found.
                           </td>
                         </tr>
@@ -384,6 +458,45 @@ const DebtsPage = () => {
                                     <span>Overdue</span>
                                   </div>
                                 ) : 'Upcoming'}
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => openEditDialog(debt)}
+                                  >
+                                    <PencilIcon className="h-4 w-4" />
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="text-destructive hover:text-destructive"
+                                      >
+                                        <TrashIcon className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Debt</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete this debt? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleDeleteDebt(debt.id)}
+                                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
                               </td>
                             </tr>
                           );

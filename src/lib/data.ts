@@ -1,4 +1,3 @@
-
 // Simulating database models and operations
 
 // Types
@@ -181,6 +180,30 @@ export const addInvestment = (investment: Omit<Investment, 'id' | 'userId'>): In
   return newInvestment;
 };
 
+export const updateInvestment = (id: number, update: Partial<Investment>): Investment | null => {
+  const investments = getInvestments();
+  const index = investments.findIndex(i => i.id === id);
+  
+  if (index === -1) return null;
+  
+  const updatedInvestment = { ...investments[index], ...update };
+  investments[index] = updatedInvestment;
+  saveData('investments', investments);
+  
+  return updatedInvestment;
+};
+
+export const deleteInvestment = (id: number): boolean => {
+  const investments = getInvestments();
+  const index = investments.findIndex(i => i.id === id);
+  
+  if (index === -1) return false;
+  
+  investments.splice(index, 1);
+  saveData('investments', investments);
+  return true;
+};
+
 // Debt operations
 export const getDebts = (): Debt[] => {
   return loadData<Debt>('debts', sampleDebts).filter(debt => debt.userId === currentUserId);
@@ -195,6 +218,30 @@ export const addDebt = (debt: Omit<Debt, 'id' | 'userId'>): Debt => {
   };
   saveData('debts', [...debts, newDebt]);
   return newDebt;
+};
+
+export const updateDebt = (id: number, update: Partial<Debt>): Debt | null => {
+  const debts = getDebts();
+  const index = debts.findIndex(d => d.id === id);
+  
+  if (index === -1) return null;
+  
+  const updatedDebt = { ...debts[index], ...update };
+  debts[index] = updatedDebt;
+  saveData('debts', debts);
+  
+  return updatedDebt;
+};
+
+export const deleteDebt = (id: number): boolean => {
+  const debts = getDebts();
+  const index = debts.findIndex(d => d.id === id);
+  
+  if (index === -1) return false;
+  
+  debts.splice(index, 1);
+  saveData('debts', debts);
+  return true;
 };
 
 // Financial Summary
