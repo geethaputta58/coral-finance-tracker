@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { MoonIcon, SunIcon, Menu, X } from 'lucide-react';
+import { MoonIcon, SunIcon, Menu, X, LogOut } from 'lucide-react';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,6 +18,14 @@ const Header = () => {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
+  
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const routes = [
     { name: 'Dashboard', path: '/' },
@@ -63,16 +71,25 @@ const Header = () => {
           ))}
         </nav>
         
-        {/* Theme toggle */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
-          className="hidden md:flex"
-        >
-          {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
-          <span className="sr-only">Toggle theme</span>
-        </Button>
+        <div className="hidden md:flex items-center gap-2">
+          {/* Theme toggle */}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          >
+            {theme === 'dark' ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
+            <span className="sr-only">Toggle theme</span>
+          </Button>
+
+          {/* Logout button */}
+          {user && (
+            <Button variant="ghost" onClick={handleLogout}>
+              <LogOut className="h-5 w-5 mr-2" />
+              Logout
+            </Button>
+          )}
+        </div>
       </div>
       
       {/* Mobile navigation */}
@@ -92,6 +109,16 @@ const Header = () => {
                 {route.name}
               </Link>
             ))}
+            {user && (
+              <Button 
+                variant="ghost" 
+                onClick={handleLogout} 
+                className="w-full justify-start px-3"
+              >
+                <LogOut className="h-5 w-5 mr-2" />
+                Logout
+              </Button>
+            )}
             <Button 
               variant="ghost" 
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} 
