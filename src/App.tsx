@@ -11,6 +11,9 @@ import Dashboard from "./pages/Dashboard";
 import Income from "./pages/Income";
 import Expenses from "./pages/Expenses";
 import Savings from "./pages/Savings";
+import Investments from "./pages/Investments";
+import Debts from "./pages/Debts";
+import Reports from "./pages/Reports";
 import News from "./pages/News";
 import NotFound from "./pages/NotFound";
 
@@ -29,9 +32,9 @@ const App = () => (
               <Route path="income" element={<Income />} />
               <Route path="expenses" element={<Expenses />} />
               <Route path="savings" element={<Savings />} />
-              <Route path="investments" element={<Dashboard />} />
-              <Route path="debts" element={<Dashboard />} />
-              <Route path="reports" element={<Dashboard />} />
+              <Route path="investments" element={<Investments />} />
+              <Route path="debts" element={<Debts />} />
+              <Route path="reports" element={<Reports />} />
               <Route path="news" element={<News />} />
               <Route path="*" element={<NotFound />} />
             </Route>
