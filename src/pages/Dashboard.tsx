@@ -1,11 +1,20 @@
-
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { getFinancialSummary, getIncomes, getExpenses, FinancialSummary } from '@/lib/data';
 import { ArrowUpIcon, ArrowDownIcon, PiggyBankIcon, TrendingUpIcon, CreditCardIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import UserDetails from '@/components/UserDetails';
+import { getFinancialSummary, getIncomes, getExpenses } from '@/lib/data';
+
+interface FinancialSummary {
+  totalIncome: number;
+  totalExpenses: number;
+  totalSavings: number;
+  totalInvestments: number;
+  totalDebts: number;
+  netWorth: number;
+}
 
 const Dashboard = () => {
   const [summary, setSummary] = useState<FinancialSummary>({
@@ -16,33 +25,27 @@ const Dashboard = () => {
     totalDebts: 0,
     netWorth: 0,
   });
-  
+
   const [chartData, setChartData] = useState<any[]>([]);
   const [expenseData, setExpenseData] = useState<any[]>([]);
 
   useEffect(() => {
-    // Load summary data
     const summaryData = getFinancialSummary();
     setSummary(summaryData);
     
-    // Process income and expense data for the chart
     const incomes = getIncomes();
     const expenses = getExpenses();
     
-    // Group by month for the chart data
     const monthlyData = processMonthlyData(incomes, expenses);
     setChartData(monthlyData);
     
-    // Process expense categories for pie chart
     const categoryData = processExpenseCategories(expenses);
     setExpenseData(categoryData);
   }, []);
 
-  // Process monthly income and expense data
   const processMonthlyData = (incomes: any[], expenses: any[]) => {
     const monthMap = new Map();
     
-    // Process incomes
     incomes.forEach((income) => {
       const month = new Date(income.date).toLocaleDateString('en-US', { month: 'short' });
       if (!monthMap.has(month)) {
@@ -52,7 +55,6 @@ const Dashboard = () => {
       monthMap.set(month, { ...current, income: current.income + income.amount });
     });
     
-    // Process expenses
     expenses.forEach((expense) => {
       const month = new Date(expense.date).toLocaleDateString('en-US', { month: 'short' });
       if (!monthMap.has(month)) {
@@ -65,7 +67,6 @@ const Dashboard = () => {
     return Array.from(monthMap.values());
   };
   
-  // Process expense categories
   const processExpenseCategories = (expenses: any[]) => {
     const categoryMap = new Map();
     
@@ -82,7 +83,6 @@ const Dashboard = () => {
     }));
   };
 
-  // Calculate savings progress
   const savingsProgress = summary.totalSavings > 0 ? 
     (summary.totalSavings / (summary.totalIncome * 0.2)) * 100 : 0;
     
@@ -96,6 +96,8 @@ const Dashboard = () => {
           Welcome to your personal finance dashboard. Here's an overview of your financial data.
         </p>
       </div>
+      
+      <UserDetails />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
